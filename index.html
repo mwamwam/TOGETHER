@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Together</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500&family=Pacifico&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(135deg, #fbd3e9, #a0c4ff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .falling-hearts {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    .falling-hearts .heart {
+      position: absolute;
+      top: -20px;
+      animation: fall 5s linear forwards;
+    }
+
+    @keyframes fall {
+      to {
+        transform: translateY(100vh);
+        opacity: 0;
+      }
+    }
+
+    .timer-container {
+      position: relative;
+      width: 90vw;
+      max-width: 350px;
+      height: auto;
+      padding: 30px 20px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #fcd8e0, #f9a8d4);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    .heart-img {
+      width: 150px;
+      height: 120px;
+      margin: 0 auto 15px auto;
+      display: block;
+    }
+
+    .names {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .label {
+      font-size: 40px;
+      font-family: 'Pacifico', cursive;
+      color: #f04e80;
+      margin: 0 10px;
+    }
+
+    .timer {
+      font-size: 32px;
+      font-weight: bold;
+      color: #ff5a5f;
+      letter-spacing: 2px;
+    }
+
+    .timer span {
+      font-size: 22px;
+      font-weight: 400;
+      color: #f04e80;
+    }
+
+    .play-pause-btn {
+      position: absolute;
+      top: 9px;
+      right: 10px;
+      width: 45px;
+      height: 45px;
+      background-color: #ff66b3;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .play-icon {
+      width: 15px;
+      height: 18px;
+      background-color: white;
+      clip-path: polygon(0 0, 100% 50%, 0 100%);
+    }
+
+    .pause-icon {
+      display: none;
+      position: relative;
+      width: 10px;
+      height: 16px;
+    }
+
+    .pause-icon:before,
+    .pause-icon:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background-color: white;
+    }
+
+    .pause-icon:before { left: 0; }
+    .pause-icon:after { right: 0; }
+
+    .play-pause-btn.playing .play-icon { display: none; }
+    .play-pause-btn.playing .pause-icon { display: block; }
+
+    .hamburger-menu {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .hamburger-menu div {
+      background-color: #f04e80;
+      height: 4px;
+      margin: 6px 0;
+      transition: 0.5s;
+    }
+
+    .hamburger-menu.open div:nth-child(1) {
+      transform: rotate(-45deg);
+      top: 6px;
+      position: relative;
+    }
+
+    .hamburger-menu.open div:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger-menu.open div:nth-child(3) {
+      transform: rotate(45deg);
+      top: -13px;
+      position: relative;
+    }
+
+    .hidden-content {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out, transform 1s ease;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 320px;
+    }
+
+    .show-content {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+
+    .hidden-content img {
+      max-width: 100%;
+      height: auto;
+      object-fit: contain;
+      border-radius: 10px;
+    }
+
+    /* 🎮 Game Button sa labas ng container */
+    .game-button {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 45px;
+      height: 45px;
+      background-color: #ff66b3;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🎮 Button sa top-left ng screen -->
+  <a href="index2.html" class="game-button">🎮</a>
+
+  <div class="falling-hearts"></div>
+
+  <div class="timer-container" id="container">
+    <div class="hamburger-menu" id="hamburgerMenu">
+      <div></div><div></div><div></div>
+    </div>
+
+    <img class="heart-img" src="2.gif" alt="Mocha Bear" />
+
+    <div class="names">
+      <h1 class="label">Hanz</h1>
+      <h1 class="label">&</h1>
+      <h1 class="label">Czyriel</h1>
+    </div>
+
+    <div class="timer" id="time"></div>
+
+    <div class="play-pause-btn" id="playPauseButton">
+      <div class="play-icon"></div>
+      <div class="pause-icon"></div>
+    </div>
+
+    <div class="hidden-content" id="contentContainer">
+      <img src="crt.jpeg" alt="CRT Image">
+    </div>
+
+    <audio id="backgroundMusic" loop>
+      <source src="m3.mp3" type="audio/mp3">
+      Your browser does not support the audio element.
+    </audio>
+  </div>
+
+  <script>
+    const startDate = new Date('2025-01-19T16:30:00');
+    const playPauseButton = document.getElementById('playPauseButton');
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const contentContainer = document.getElementById('contentContainer');
+    const timerContainer = document.getElementById('container');
+    const names = document.querySelector('.names');
+    const heart = document.querySelector('.heart-img');
+    const timer = document.getElementById('time');
+
+    playPauseButton.addEventListener('click', () => {
+      if (backgroundMusic.paused) {
+        backgroundMusic.play();
+        playPauseButton.classList.add('playing');
+      } else {
+        backgroundMusic.pause();
+        playPauseButton.classList.remove('playing');
+      }
+    });
+
+    hamburgerMenu.addEventListener('click', () => {
+      hamburgerMenu.classList.toggle('open');
+      timerContainer.classList.toggle('fade');
+
+      if (contentContainer.classList.contains('show-content')) {
+        names.style.visibility = 'visible';
+        heart.style.visibility = 'visible';
+        timer.style.visibility = 'visible';
+        contentContainer.classList.remove('show-content');
+      } else {
+        names.style.visibility = 'hidden';
+        heart.style.visibility = 'hidden';
+        timer.style.visibility = 'hidden';
+        contentContainer.classList.add('show-content');
+      }
+    });
+
+    function updateTimer() {
+      const now = new Date();
+      const diff = now - startDate;
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      timer.innerHTML = `${days} <span>days</span>, ${hours} <span>hours</span>, ${minutes} <span>minutes</span>, ${seconds} <span>seconds</span>`;
+    }
+
+    setInterval(updateTimer, 1000);
+    updateTimer();
+
+    // Falling hearts
+    const container = document.querySelector('.falling-hearts');
+    function createHeart() {
+      const heart = document.createElement('div');
+      heart.classList.add('heart');
+      heart.textContent = '❤️';
+      heart.style.left = Math.random() * 100 + 'vw';
+      heart.style.animationDuration = (3 + Math.random() * 2) + 's';
+      heart.style.fontSize = (16 + Math.random() * 10) + 'px';
+      container.appendChild(heart);
+      setTimeout(() => heart.remove(), 5000);
+    }
+    setInterval(createHeart, 300);
+  </script>
+</body>
+</html>
