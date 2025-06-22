@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Snake Game</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      background: linear-gradient(135deg,#b8b8f3, gray); /* softer eyes */
+      font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
+      position: relative;
+    }
+
+    canvas {
+      background-color: rgba(44, 62, 80, 0.999);
+      display: block;
+      margin: auto;
+      border: 3px solid red;
+    }
+
+    #Up, #Down, #Left, #Right {
+      background: linear-gradient(to bottom right, #dc6ca2, #b65fa2);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      width: 90px;
+      height: 45px;
+      cursor: pointer;
+      margin: 6px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+      transition: transform 0.1s ease;
+    }
+
+    #Up:active, #Down:active, #Left:active, #Right:active {
+      transform: scale(0.95);
+    }
+
+    #conteneur {
+      width: 50%;
+      margin: auto;
+      display: flex;
+      justify-content: space-around;
+    }
+
+    #button-container {
+      position: absolute;
+      width: 100%;
+      top: 610px;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 30px;
+      box-sizing: border-box;
+      pointer-events: auto;
+    }
+
+    #home, #toggle-play {
+      background: linear-gradient(to bottom right, #bb60a0, #a255b2);
+      color: #fff;
+      padding: 6px;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 20px;
+      width: 90px;
+      height: 40px;
+      text-align: center;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      transition: transform 0.1s ease;
+    }
+
+    #home:active, #toggle-play:active {
+      transform: scale(0.95);
+    }
+
+    #controller-wrapper {
+      position: absolute;
+      width: 100%;
+      top: 670px;
+    }
+
+    @media screen and (max-width: 500px) {
+      canvas {
+        width: 350px;
+        height: 350px;
+      }
+
+      #Up, #Down, #Left, #Right {
+        width: 75px;
+        height: 40px;
+        font-size: 15px;
+      }
+
+      #home, #toggle-play {
+        width: 70px;
+        height: 35px;
+        font-size: 14px;
+      }
+
+      #button-container {
+        top: 460px;
+      }
+
+      #controller-wrapper {
+        top: 520px;
+      }
+    }
+
+    #home, #toggle-play, #Up, #Down, #Left, #Right {
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="zone" width="600" height="600"></canvas>
+
+  <div id="button-container">
+    <div id="home">Home</div>
+    <div id="toggle-play">Play</div>
+  </div>
+
+  <div id="controller-wrapper">
+    <div id="Up">Up</div>
+    <div id="conteneur">
+      <div id="Left">Left</div>
+      <div id="Right">Right</div>
+    </div>
+    <div id="Down">Down</div>
+  </div>
+
+  <script>
+    alert("Snake Game\nLike and comment");
+
+    const canvas = document.getElementById("zone");
+    const ctx = canvas.getContext("2d");
+
+    const radial = ctx.createRadialGradient(200, 100, 50, 200, 100, 775);
+    radial.addColorStop(0, "#34495e");
+    radial.addColorStop(0.25, "#2c3e50");
+
+    const radial2 = ctx.createRadialGradient(400, 500, 50, 400, 100, 775);
+    radial2.addColorStop(0, "#34495e");
+    radial2.addColorStop(0.25, "#2c3e50");
+
+    const cellSize = 20;
+    let x = Math.trunc(Math.random() * canvas.width / cellSize) * cellSize;
+    let y = Math.trunc(Math.random() * canvas.height / cellSize) * cellSize;
+    let dx = 0, dy = 0;
+    let trace = [], initialLength = 5, traceLength = 5;
+    let colorIndex = 0, lives = 5, score = 0, timeout = 0, history = "";
+    let collision = false, intervalID;
+    let highScore = localStorage.getItem("snakeHighScore") || 0;
+
+    let appleX = Math.trunc(Math.random() * canvas.width / cellSize) * cellSize;
+    let appleY = Math.trunc(Math.random() * canvas.height / cellSize) * cellSize;
+    const appleRadius = 10;
+
+    const playBtn = document.getElementById("toggle-play");
+    const homeBtn = document.getElementById("home");
+    let isPaused = true;
+
+    window.onload = () => {
+      document.addEventListener("keydown", keyboardHandler);
+      bindTouchControls();
+      playBtn.textContent = "Play";
+      isPaused = true;
+    };
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.fillStyle = radial;
+      ctx.arc(100, 50, 250, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = radial2;
+      ctx.arc(500, 550, 250, 0, 2 * Math.PI);
+      ctx.fill();
+
+      x += dx * cellSize;
+      y += dy * cellSize;
+      trace.push({ x, y });
+      if (trace.length > traceLength) trace.shift();
+
+      ctx.lineCap = "round";
+      trace.forEach(pos => {
+        ctx.strokeRect(pos.x, pos.y, cellSize - 3, cellSize - 3);
+      });
+
+      ctx.beginPath();
+      ctx.fillStyle = "#ff1111";
+      ctx.arc(trace.at(-1).x + 5, trace.at(-1).y + 5, 5, 0, Math.PI * 2);
+      ctx.arc(trace.at(-1).x + 13, trace.at(-1).y + 5, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.closePath();
+
+      ctx.beginPath();
+      ctx.fillStyle = "#fff";
+      ctx.arc(trace.at(-1).x + 5, trace.at(-1).y + 5, 2.5, 0, Math.PI * 2);
+      ctx.arc(trace.at(-1).x + 13, trace.at(-1).y + 5, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.closePath();
+
+      if (x === appleX && y === appleY) {
+        score += 10;
+        traceLength++;
+        appleX = Math.trunc(Math.random() * canvas.width / cellSize) * cellSize;
+        appleY = Math.trunc(Math.random() * canvas.height / cellSize) * cellSize;
+        colorIndex = (colorIndex + 1) % 3;
+        const colors = ["#d35400", "#9b59b6", "#1abc9c"];
+        ctx.fillStyle = colors[colorIndex];
+        trace.forEach(pos => ctx.fillRect(pos.x, pos.y, cellSize - 3, cellSize - 3));
+      } else if (timeout++ > 100 && (dx !== 0 || dy !== 0)) {
+        timeout = 0;
+        appleX = Math.trunc(Math.random() * canvas.width / cellSize) * cellSize;
+        appleY = Math.trunc(Math.random() * canvas.height / cellSize) * cellSize;
+      }
+
+      ctx.beginPath();
+      ctx.arc(appleX + appleRadius, appleY + appleRadius, appleRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "#e74c3c";
+      ctx.fill();
+      ctx.closePath();
+
+      ctx.font = "16px Arial";
+      ctx.fillStyle = "#2ecc71";
+      ctx.fillText("√", appleX + 3, appleY + 3);
+
+      ctx.save();
+      ctx.scale(1, 1.5);
+      ctx.beginPath();
+      ctx.arc(appleX + appleRadius + 3, (appleY + appleRadius) / 1.5, appleRadius / 3, 0, Math.PI * 2);
+      ctx.fillStyle = "#ed7365";
+      ctx.fill();
+      ctx.closePath();
+      ctx.restore();
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px Arial";
+      ctx.fillText("Score: " + score, 5, 20);
+      ctx.fillText("Lives: " + lives, canvas.width - 130, 20);
+      ctx.fillText("High Score: " + highScore, canvas.width / 2 - 50, 20);
+
+      if (trace.length > 5) {
+        for (let i = 0; i < trace.length - 1; i++) {
+          if (trace[i].x === trace.at(-1).x && trace[i].y === trace.at(-1).y) {
+            collision = true;
+            break;
+          }
+        }
+      }
+
+      if (
+        x < 0 || x > canvas.width - cellSize ||
+        y < 0 || y > canvas.height - cellSize ||
+        collision
+      ) {
+        timeout = 0;
+        ctx.fillStyle = "rgba(250,0,0,0.2)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        trace = [];
+        x = Math.trunc(canvas.width / cellSize / 2) * cellSize;
+        y = Math.trunc(canvas.height / cellSize / 2) * cellSize;
+        trace.push({ x, y });
+        traceLength = initialLength;
+        appleX = Math.trunc(Math.random() * canvas.width / cellSize) * cellSize;
+        appleY = Math.trunc(Math.random() * canvas.height / cellSize) * cellSize;
+        lives--;
+        collision = false;
+
+        if (lives === 0) {
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("snakeHighScore", highScore);
+          }
+          ctx.font = "40px Arial";
+          ctx.fillStyle = "#fff";
+          ctx.fillText("GAME OVER", canvas.width / 2 - 130, canvas.height / 2);
+          score = 0;
+          clearInterval(intervalID);
+          playBtn.textContent = "Retry";
+          isPaused = true;
+          return;
+        }
+      }
+    }
+
+    function bindTouchControls() {
+      document.getElementById("Up").onclick = () => { if (history !== "down") dx = 0; dy = -1; history = "up"; };
+      document.getElementById("Down").onclick = () => { if (history !== "up") dx = 0; dy = 1; history = "down"; };
+      document.getElementById("Left").onclick = () => { if (history !== "right") dx = -1; dy = 0; history = "left"; };
+      document.getElementById("Right").onclick = () => { if (history !== "left") dx = 1; dy = 0; history = "right"; };
+    }
+
+    function keyboardHandler(e) {
+      switch (e.code) {
+        case "ArrowUp": if (history !== "ArrowDown") dx = 0, dy = -1, history = e.code; break;
+        case "ArrowDown": if (history !== "ArrowUp") dx = 0, dy = 1, history = e.code; break;
+        case "ArrowLeft": if (history !== "ArrowRight") dx = -1, dy = 0, history = e.code; break;
+        case "ArrowRight": if (history !== "ArrowLeft") dx = 1, dy = 0, history = e.code; break;
+      }
+    }
+
+    playBtn.onclick = () => {
+      if (playBtn.textContent === "Retry") {
+        x = Math.trunc(Math.random() * canvas.width / cellSize) * cellSize;
+        y = Math.trunc(Math.random() * canvas.height / cellSize) * cellSize;
+        dx = 0; dy = 0;
+        trace = [];
+        traceLength = initialLength;
+        lives = 5;
+        score = 0;
+        history = "";
+        collision = false;
+        appleX = Math.trunc(Math.random() * canvas.width / cellSize) * cellSize;
+        appleY = Math.trunc(Math.random() * canvas.height / cellSize) * cellSize;
+        intervalID = setInterval(gameLoop, 150);
+        playBtn.textContent = "Pause";
+        isPaused = false;
+      } else if (isPaused) {
+        intervalID = setInterval(gameLoop, 150);
+        playBtn.textContent = "Pause";
+        isPaused = false;
+      } else {
+        clearInterval(intervalID);
+        playBtn.textContent = "Play";
+        isPaused = true;
+      }
+    };
+
+    homeBtn.onclick = () => {
+      window.location.href = "index.html";
+    };
+  </script>
+</body>
+</html>
